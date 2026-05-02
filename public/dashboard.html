@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - WhatsApp Bot Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; }
+        .app-container { display: flex; min-height: 100vh; }
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { font-size: 32px; }
+        .logo-text { font-size: 20px; font-weight: 700; color: white; }
+        .sidebar-nav { flex: 1; padding: 20px 16px; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #9ca3af;
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .nav-icon { font-size: 20px; }
+        .sidebar-footer { padding: 20px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .user-name { display: block; font-size: 14px; font-weight: 600; color: white; }
+        .user-role { display: block; font-size: 11px; color: #9ca3af; text-transform: uppercase; }
+        .btn-logout {
+            width: 100%;
+            padding: 10px;
+            background: rgba(239,68,68,0.2);
+            color: #f87171;
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        /* Main Content */
+        .main-content { flex: 1; margin-left: 280px; }
+        .main-header {
+            background: white;
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .main-header h1 { font-size: 24px; font-weight: 600; color: #1f2937; }
+        .date-time { font-size: 14px; color: #6b7280; }
+        .content-area { padding: 32px; }
+        /* Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-number { font-size: 32px; font-weight: 700; color: #1f2937; }
+        .stat-icon { font-size: 48px; opacity: 0.5; }
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 20px;
+            overflow-x: auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { font-weight: 600; color: #374151; background: #f9fafb; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-inactive { background: #fed7aa; color: #92400e; }
+        .status-banned { background: #fee2e2; color: #dc2626; }
+        .btn-icon {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 4px;
+        }
+        .btn-edit { background: #dbeafe; color: #1e40af; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-add {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { font-size: 28px; cursor: pointer; color: #9ca3af; }
+        .modal-body { padding: 24px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; }
+        .btn-primary { padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; }
+        .btn-secondary { padding: 10px 20px; background: #f3f4f6; color: #374151; border: none; border-radius: 10px; cursor: pointer; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px; }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+        }
+        .log-item {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .log-icon { width: 40px; height: 40px; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .log-content { flex: 1; }
+        .log-action { font-weight: 600; color: #1f2937; }
+        .log-time { font-size: 12px; color: #9ca3af; }
+        pre {
+            background: #1f2937;
+            color: #10b981;
+            padding: 16px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 80px; }
+            .sidebar .logo-text, .sidebar .nav-item span:not(.nav-icon), .user-details { display: none; }
+            .main-content { margin-left: 80px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🤖</span>
+                    <span class="logo-text">Bot Manager</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+                <a class="nav-item" data-page="bot-users"><span class="nav-icon">👥</span><span>User Bot</span></a>
+                <a class="nav-item" id="systemUsersNav" style="display:none;" data-page="system-users"><span class="nav-icon">👑</span><span>Kelola Admin</span></a>
+                <a class="nav-item" data-page="logs"><span class="nav-icon">📝</span><span>Aktivitas</span></a>
+                <a class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span><span>Pengaturan</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">👤</div>
+                    <div class="user-details">
+                        <span class="user-name" id="userName">Loading...</span>
+                        <span class="user-role" id="userRole">-</span>
+                    </div>
+                </div>
+                <button class="btn-logout" id="logoutBtn"><span>🚪</span> Logout</button>
+            </div>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <h1 id="pageTitle">Dashboard</h1>
+                <div class="date-time" id="dateTime"></div>
+            </header>
+            <div class="content-area" id="contentArea"></div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Tambah User Bot</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="modalForm">
+                    <div class="input-group">
+                        <label>Nomor WhatsApp</label>
+                        <input type="tel" id="modalNumber" placeholder="6281234567890">
+                    </div>
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select id="modalStatus">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="banned">Banned</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="expiryGroup">
+                        <label>Kadaluarsa (opsional)</label>
+                        <input type="datetime-local" id="modalExpiry">
+                    </div>
+                    <div id="modalSystemUserFields" style="display:none;">
+                        <div class="input-group">
+                            <label>Username</label>
+                            <input type="text" id="modalSysUsername" placeholder="username">
+                        </div>
+                        <div class="input-group">
+                            <label>Password</label>
+                            <input type="password" id="modalSysPassword" placeholder="password">
+                        </div>
+                        <div class="input-group">
+                            <label>Nama Lengkap</label>
+                            <input type="text" id="modalSysName" placeholder="Nama">
+                        </div>
+                        <div class="input-group">
+                            <label>Role</label>
+                            <select id="modalSysRole">
+                                <option value="admin">Admin</option>
+                                <option value="member">Member</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Batal</button>
+                <button class="btn-primary modal-save">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let currentUser = null;
+        let currentModalAction = null;
+        let currentEditId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+            if (!token || !userStr) { window.location.href = '/'; return; }
+            currentUser = JSON.parse(userStr);
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
+            if (currentUser.role === 'owner') document.getElementById('systemUsersNav').style.display = 'block';
+            setupNavigation();
+            loadPage('dashboard');
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                localStorage.clear();
+                window.location.href = '/';
+            });
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+        });
+
+        function setupNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = item.dataset.page;
+                    if (page) {
+                        loadPage(page);
+                        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                        item.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        async function loadPage(page) {
+            const token = localStorage.getItem('token');
+            const titles = {
+                dashboard: 'Dashboard',
+                'bot-users': 'Manajemen User Bot',
+                'system-users': 'Kelola Admin & Member',
+                logs: 'Log Aktivitas',
+                settings: 'Pengaturan'
+            };
+            document.getElementById('pageTitle').innerHTML = titles[page] || 'Dashboard';
+
+            if (page === 'dashboard') {
+                const res = await fetch(`${API_URL}/stats`, { headers: { 'Authorization': token } });
+                const data = await res.json();
+                let html = `<div class="stats-grid">
+                    <div class="stat-card"><div><h4>Total User Bot</h4><div class="stat-number">${data.stats.totalBotUsers}</div></div><div class="stat-icon">👥</div></div>
+                    <div class="stat-card"><div><h4>User Aktif</h4><div class="stat-number">${data.stats.activeUsers}</div></div><div class="stat-icon">✅</div></div>
+                    <div class="stat-card"><div><h4>User Nonaktif</h4><div class="stat-number">${data.stats.inactiveUsers}</div></div><div class="stat-icon">⛔</div></div>
+                    <div class="stat-card"><div><h4>Kadaluarsa</h4><div class="stat-number">${data.stats.expiredUsers}</div></div><div class="stat-icon">⌛</div></div>
+                </div>`;
+                if (currentUser.role === 'owner') {
+                    html += `<div class="stats-grid"><div class="stat-card"><div><h4>Total Admin</h4><div class="stat-number">${data.stats.totalAdmins}</div></div><div class="stat-icon">👑</div></div></div>`;
+                }
+                html += `<div class="table-container"><h3 style="padding:20px">Aktivitas Terbaru</h3><div class="logs-list">`;
+                data.stats.recentActivity.forEach(log => {
+                    html += `<div class="log-item"><div class="log-icon">📋</div><div class="log-content"><div class="log-action">${log.action} - ${log.target || 'Sistem'}</div><div class="log-time">Oleh: ${log.user} | ${new Date(log.time).toLocaleString('id-ID')}</div></div></div>`;
+                });
+                html += `</div></div>`;
+                document.getElementById('contentArea').innerHTML = html;
+            }
+            else if (page === 'bot-users') {
+                const res = await fetch(`${API_URL}/bot-users`, { headers: { 'Authorization': token } });
+                const data = await res.json();
+                let html = `<button class="btn-add" onclick="showAddBotUserModal()">➕ Tambah User Bot</button>
+                    <div class="table-container"><table><thead><tr><th>No WhatsApp</th><th>Status</th><th>Kadaluarsa</th><th>Ditambahkan Oleh</th>${currentUser.role === 'owner' ? '<th>Aksi</th>' : ''}</tr></thead><tbody>`;
+                data.users.forEach(user => {
+                    const statusClass = user.status === 'active' ? 'status-active' : user.status === 'inactive' ? 'status-inactive' : 'status-banned';
+                    const statusText = user.status === 'active' ? 'Aktif' : user.status === 'inactive' ? 'Nonaktif' : 'Diblokir';
+                    html += `<tr><td>${user.number}</td><td><span class="status-badge ${statusClass}">${statusText}</span></td><td>${user.expiredAt ? new Date(user.expiredAt).toLocaleDateString('id-ID') : 'Selamanya'}</td><td>${user.addedBy}</td>`;
+                    if (currentUser.role === 'owner') {
+                        html += `<td><button class="btn-icon btn-edit" onclick="editBotUser(${user.id})">Edit</button><button class="btn-icon btn-delete" onclick="deleteBotUser(${user.id})">Hapus</button></td>`;
+                    }
+                    html += `</tr>`;
+                });
+                html += `</tbody></table></div>`;
+                document.getElementById('contentArea').innerHTML = html;
+            }
+            else if (page === 'system-users' && currentUser.role === 'owner') {
+                const res = await fetch(`${API_URL}/system-users`, { headers: { 'Authorization': token } });
+                const data = await res.json();
+                let html = `<button class="btn-add" onclick="showAddSystemUserModal()">➕ Tambah Admin/Member</button>
+                    <div class="table-container"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody>`;
+                data.users.forEach(user => {
+                    if (user.role !== 'owner') {
+                        html += `<tr><td>${user.username}</td><td>${user.name}</td><td><span class="status-badge ${user.role === 'admin' ? 'status-active' : 'status-inactive'}">${user.role}</span></td><td>${new Date(user.createdAt).toLocaleDateString('id-ID')}</td><td><button class="btn-icon btn-delete" onclick="deleteSystemUser(${user.id})">Hapus</button></td></tr>`;
+                    }
+                });
+                html += `</tbody></table></div>`;
+                document.getElementById('contentArea').innerHTML = html;
+            }
+            else if (page === 'logs') {
+                const res = await fetch(`${API_URL}/logs`, { headers: { 'Authorization': token } });
+                const data = await res.json();
+                let html = `<div class="table-container"><div class="logs-list">`;
+                data.logs.forEach(log => {
+                    const icon = log.action === 'ADD' ? '➕' : log.action === 'UPDATE' ? '✏️' : log.action === 'DELETE' ? '🗑️' : log.action === 'ADD_USER' ? '👑' : '📝';
+                    html += `<div class="log-item"><div class="log-icon">${icon}</div><div class="log-content"><div class="log-action">${log.action === 'ADD' ? 'Menambah' : log.action === 'UPDATE' ? 'Mengupdate' : log.action === 'DELETE' ? 'Menghapus' : log.action === 'ADD_USER' ? 'Menambah Admin' : log.action === 'DELETE_USER' ? 'Menghapus Admin' : log.action} ${log.target || ''} ${log.status ? '→ ' + log.status : ''}</div><div class="log-time">Oleh: ${log.user} | ${new Date(log.time).toLocaleString('id-ID')}</div></div></div>`;
+                });
+                if (data.logs.length === 0) html += `<p style="padding:20px;text-align:center">Belum ada aktivitas</p>`;
+                html += `</div></div>`;
+                document.getElementById('contentArea').innerHTML = html;
+            }
+            else if (page === 'settings') {
+                document.getElementById('contentArea').innerHTML = `<div class="table-container" style="padding:24px">
+                    <h3>Informasi Sistem</h3>
+                    <p><strong>Role Anda:</strong> ${currentUser.role.toUpperCase()}</p>
+                    <p><strong>Nama:</strong> ${currentUser.name}</p>
+                    <p><strong>Username:</strong> ${currentUser.username}</p>
+                    <hr style="margin:20px 0">
+                    <h3>API Endpoint untuk Bot</h3>
+                    <p>URL validasi: <code>${API_URL}/validate-bot</code></p>
+                    <p>Method: POST</p>
+                    <p>Body: <code>{ "number": "6281234567890" }</code></p>
+                    <hr style="margin:20px 0">
+                    <h3>Cara Integrasi ke Script Bot</h3>
+                    <pre>const response = await fetch("${API_URL}/validate-bot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ number: "6281234567890" })
+});
+const data = await response.json();
+if (data.allowed) {
+    // Lanjutkan bot
+} else {
+    console.log("Akses ditolak:", data.message);
+}</pre>
+                </div>`;
+            }
+        }
+
+        function showAddBotUserModal() { currentModalAction = 'add-bot'; currentEditId = null; document.getElementById('modalTitle').textContent = 'Tambah User Bot'; document.getElementById('modalNumber').value = ''; document.getElementById('modalStatus').value = 'active'; document.getElementById('modalExpiry').value = ''; document.getElementById('modalSystemUserFields').style.display = 'none'; document.getElementById('modal').style.display = 'flex'; }
+        function editBotUser(id) { currentModalAction = 'edit-bot'; currentEditId = id; document.getElementById('modalTitle').textContent = 'Edit User Bot'; document.getElementById('modalSystemUserFields').style.display = 'none'; document.getElementById('modal').style.display = 'flex'; }
+        async function deleteBotUser(id) { if (!confirm('Yakin ingin menghapus user ini?')) return; const token = localStorage.getItem('token'); const res = await fetch(`${API_URL}/bot-users/${id}`, { method: 'DELETE', headers: { 'Authorization': token } }); if (res.ok) loadPage('bot-users'); else alert('Gagal menghapus'); }
+        function showAddSystemUserModal() { currentModalAction = 'add-system'; document.getElementById('modalTitle').textContent = 'Tambah Admin/Member'; document.getElementById('modalSystemUserFields').style.display = 'block'; document.getElementById('modalSysUsername').value = ''; document.getElementById('modalSysPassword').value = ''; document.getElementById('modalSysName').value = ''; document.getElementById('modalSysRole').value = 'admin'; document.getElementById('modal').style.display = 'flex'; }
+        async function deleteSystemUser(id) { if (!confirm('Yakin ingin menghapus user ini?')) return; const token = localStorage.getItem('token'); const res = await fetch(`${API_URL}/system-users/${id}`, { method: 'DELETE', headers: { 'Authorization': token } }); if (res.ok) loadPage('system-users'); else alert('Gagal menghapus'); }
+
+        document.querySelector('.modal-save')?.addEventListener('click', async () => {
+            const token = localStorage.getItem('token');
+            if (currentModalAction === 'add-bot') {
+                const number = document.getElementById('modalNumber').value;
+                const status = document.getElementById('modalStatus').value;
+                const expiredAt = document.getElementById('modalExpiry').value || null;
+                const res = await fetch(`${API_URL}/bot-users`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': token }, body: JSON.stringify({ number, status, expiredAt }) });
+                if (res.ok) { document.getElementById('modal').style.display = 'none'; loadPage('bot-users'); }
+                else alert('Gagal menambah');
+            } else if (currentModalAction === 'edit-bot') {
+                const status = document.getElementById('modalStatus').value;
+                const res = await fetch(`${API_URL}/bot-users/${currentEditId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': token }, body: JSON.stringify({ status }) });
+                if (res.ok) { document.getElementById('modal').style.display = 'none'; loadPage('bot-users'); }
+                else alert('Gagal mengupdate');
+            } else if (currentModalAction === 'add-system') {
+                const username = document.getElementById('modalSysUsername').value;
+                const password = document.getElementById('modalSysPassword').value;
+                const name = document.getElementById('modalSysName').value;
+                const role = document.getElementById('modalSysRole').value;
+                if (!username || !password || !name) { alert('Semua field harus diisi'); return; }
+                const res = await fetch(`${API_URL}/system-users`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': token }, body: JSON.stringify({ username, password, role, name }) });
+                if (res.ok) { document.getElementById('modal').style.display = 'none'; loadPage('system-users'); }
+                else alert('Gagal menambah');
+            }
+        });
+
+        document.querySelectorAll('.modal-close, .modal-cancel').forEach(el => el.addEventListener('click', () => document.getElementById('modal').style.display = 'none'));
+        
+        function updateDateTime() {
+            document.getElementById('dateTime').innerHTML = new Date().toLocaleString('id-ID', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }
+
+        window.showAddBotUserModal = showAddBotUserModal;
+        window.editBotUser = editBotUser;
+        window.deleteBotUser = deleteBotUser;
+        window.showAddSystemUserModal = showAddSystemUserModal;
+        window.deleteSystemUser = deleteSystemUser;
+    </script>
+</body>
+</html>
+```
