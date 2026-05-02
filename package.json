@@ -1,0 +1,13 @@
+{
+  "name": "wa-bot-dashboard-vercel",
+  "version": "1.0.0",
+  "description": "Dashboard untuk manajemen lisensi WhatsApp Bot",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0"
+  }
+}
